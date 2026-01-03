@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEECS CGPA/GPA Calculator</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        
+        /* Dark Mode (Default) */
+        :root {
+            --bg-primary: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            --bg-secondary: #1a1a2e;
+            --bg-card: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+            --glass-bg: rgba(255,255,255,0.05);
+            --glass-border: rgba(255,255,255,0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --input-bg: rgba(255,255,255,0.1);
+            --input-border: rgba(255,255,255,0.2);
+            --scrollbar-track: #1a1a2e;
+            --scrollbar-thumb: #6366f1;
+            --hover-bg: rgba(255,255,255,0.1);
+            --divider: rgba(255,255,255,0.1);
+        }
+        
+        /* Light Mode */
+        .light-mode {
+            --bg-primary: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 50%, #c7d2fe 100%);
+            --bg-secondary: #f8fafc;
+            --bg-card: linear-gradient(145deg, #ffffff 0%, #f1f5f9 100%);
+            --glass-bg: rgba(255,255,255,0.7);
+            --glass-border: rgba(99,102,241,0.2);
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --input-bg: rgba(0,0,0,0.05);
+            --input-border: rgba(99,102,241,0.3);
+            --scrollbar-track: #e2e8f0;
+            --scrollbar-thumb: #6366f1;
+            --hover-bg: rgba(99,102,241,0.1);
+            --divider: rgba(99,102,241,0.2);
+        }
+        
+        .gradient-bg { background: var(--bg-primary); }
+        .glass { background: var(--glass-bg); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); }
+        .glow { box-shadow: 0 0 30px rgba(99, 102, 241, 0.3); }
+        .btn-glow:hover { box-shadow: 0 0 25px rgba(99, 102, 241, 0.5); }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+        .report-card { background: var(--bg-card); }
+        .semester-divider { background: linear-gradient(90deg, transparent, #6366f1, transparent); height: 2px; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+        ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
+        .export-menu-item:hover { background: var(--hover-bg); }
+        @media print { .no-print { display: none !important; } }
+        .file-input-label { cursor: pointer; transition: all 0.3s; }
+        .file-input-label:hover { background: var(--hover-bg); }
+        
+        /* Text colors */
+        .text-white { color: var(--text-primary) !important; }
+        .light-mode .text-gray-400 { color: var(--text-secondary) !important; }
+        .light-mode .text-gray-500 { color: var(--text-muted) !important; }
+        
+        /* Input styling */
+        .light-mode input, .light-mode select {
+            background: var(--input-bg) !important;
+            border-color: var(--input-border) !important;
+            color: var(--text-primary) !important;
+        }
+        .light-mode input::placeholder {
+            color: var(--text-muted) !important;
+        }
+        
+        /* Glass cards in light mode */
+        .light-mode .glass {
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.1);
+        }
+        
+        /* Report card light mode */
+        .light-mode .report-card {
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        .light-mode .bg-white\/5 {
+            background: rgba(99, 102, 241, 0.05) !important;
+        }
+        
+        .light-mode .border-white\/10 {
+            border-color: var(--divider) !important;
+        }
+        
+        .light-mode .border-white\/5 {
+            border-color: rgba(99, 102, 241, 0.1) !important;
+        }
+        
+        .light-mode .hover\:bg-white\/5:hover {
+            background: rgba(99, 102, 241, 0.1) !important;
+        }
+        
+        .light-mode .hover\:bg-white\/10:hover {
+            background: rgba(99, 102, 241, 0.15) !important;
+        }
+        
+        /* Toggle switch styles */
+        .theme-toggle {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+        
+        .light-mode .theme-toggle {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+        
+        .theme-toggle-circle {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 22px;
+            height: 22px;
+            background: #6366f1;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .light-mode .theme-toggle-circle {
+            left: calc(100% - 24px);
+            background: #f59e0b;
+        }
+        
+        .theme-toggle-circle svg {
+            width: 14px;
+            height: 14px;
+            color: white;
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white">
+    <!-- About Modal -->
+    <div id="aboutModal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center p-4">
+        <div class="glass rounded-2xl p-8 max-w-md w-full fade-in">
+            <div class="text-center">
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT_S9zrAmKe_XURwXN5WadNwPD0tQAo8smwkw&s" alt="Muntazir Mahdi" class="w-24 h-24 mx-auto mb-4 rounded-full object-cover border-4 border-indigo-500 shadow-lg">
+                <h3 class="text-2xl font-bold mb-2">Muntazir Mahdi</h3>
+                <p class="text-gray-400 mb-4">Developer</p>
+                <a href="mailto:syedmuntazirmahdimahdi.su@gmail.com" class="text-indigo-400 hover:text-indigo-300 break-all">syedmuntazirmahdimahdi.su@gmail.com</a>
+                <p class="text-gray-500 mt-4 text-sm">DEECS CGPA/GPA Calculator v2.0</p>
+                <button onclick="closeAbout()" class="mt-6 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-40 glass">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-sm">DE</div>
+                <span class="font-semibold hidden sm:block">DEECS Calculator</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <!-- Theme Toggle -->
+                <div class="theme-toggle" onclick="toggleTheme()" title="Toggle Light/Dark Mode">
+                    <div class="theme-toggle-circle">
+                        <svg id="moonIcon" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                        </svg>
+                        <svg id="sunIcon" class="hidden" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                </div>
+                <!-- About Button -->
+                <button onclick="showAbout()" class="px-4 py-2 glass rounded-lg hover:bg-white/10 transition flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span class="hidden sm:inline">About Developer</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 pt-24 pb-12">
+        <!-- Welcome Screen -->
+        <div id="welcomeScreen" class="fade-in">
+            <div class="text-center max-w-3xl mx-auto">
+                <div class="w-32 h-32 mx-auto mb-8 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center glow">
+                    <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                </div>
+                <h1 class="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">DEECS CGPA/GPA Calculator</h1>
+                <p class="text-gray-400 text-lg mb-2">Department of Electrical, Electronics and Computer Systems</p>
+                <p class="text-gray-500 mb-12">Calculate your academic performance with precision</p>
+                
+                <div class="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                    <button onclick="selectMode('semester')" class="glass p-8 rounded-2xl hover:bg-white/10 transition btn-glow group">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center group-hover:scale-110 transition">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Semester GPA</h3>
+                        <p class="text-gray-400 text-sm">Calculate GPA for a single semester</p>
+                    </button>
+                    <button onclick="selectMode('cgpa')" class="glass p-8 rounded-2xl hover:bg-white/10 transition btn-glow group">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center group-hover:scale-110 transition">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Cumulative CGPA</h3>
+                        <p class="text-gray-400 text-sm">Calculate CGPA across multiple semesters</p>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Name Screen -->
+        <div id="studentNameScreen" class="hidden fade-in">
+            <div class="text-center max-w-md mx-auto">
+                <button onclick="goBack('welcome')" class="mb-8 text-gray-400 hover:text-white transition flex items-center gap-2 mx-auto">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    Back
+                </button>
+                <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                </div>
+                <h2 class="text-3xl font-bold mb-4">Student Information</h2>
+                <p class="text-gray-400 mb-8">Enter your details for the report card</p>
+                
+                <div class="glass p-8 rounded-2xl space-y-4">
+                    <div>
+                        <label class="text-gray-400 text-sm mb-2 block text-left">Full Name *</label>
+                        <input type="text" id="studentName" placeholder="Enter your full name" class="w-full bg-white/10 border border-white/20 rounded-xl px-6 py-4 focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-sm mb-2 block text-left">Roll Number (Optional)</label>
+                        <input type="text" id="studentRoll" placeholder="e.g., 2024-EE-001" class="w-full bg-white/10 border border-white/20 rounded-xl px-6 py-4 focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-sm mb-2 block text-left">Program (Optional)</label>
+                        <input type="text" id="studentProgram" placeholder="e.g., BS Electrical Engineering" class="w-full bg-white/10 border border-white/20 rounded-xl px-6 py-4 focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+                    <button onclick="saveStudentInfo()" class="w-full mt-4 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-semibold hover:opacity-90 transition btn-glow">Continue</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Method Selection -->
+        <div id="inputMethodScreen" class="hidden fade-in">
+            <div class="text-center max-w-2xl mx-auto">
+                <button onclick="goBack('studentName')" class="mb-8 text-gray-400 hover:text-white transition flex items-center gap-2 mx-auto">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    Back
+                </button>
+                <h2 class="text-3xl font-bold mb-4">Choose Input Method</h2>
+                <p class="text-gray-400 mb-8">How would you like to enter your grades?</p>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <button onclick="selectInputMethod('marks')" class="glass p-8 rounded-2xl hover:bg-white/10 transition btn-glow group">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center group-hover:scale-110 transition">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Enter Marks</h3>
+                        <p class="text-gray-400 text-sm">Enter marks (0-100) and we'll convert to GPA</p>
+                    </button>
+                    <button onclick="selectInputMethod('gpa')" class="glass p-8 rounded-2xl hover:bg-white/10 transition btn-glow group">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center group-hover:scale-110 transition">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Enter GPA</h3>
+                        <p class="text-gray-400 text-sm">Directly enter subject GPA (0.00-4.00)</p>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Semester Count (for CGPA) -->
+        <div id="semesterCountScreen" class="hidden fade-in">
+            <div class="text-center max-w-md mx-auto">
+                <button onclick="goBack('inputMethod')" class="mb-8 text-gray-400 hover:text-white transition flex items-center gap-2 mx-auto">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    Back
+                </button>
+                <h2 class="text-3xl font-bold mb-4">Number of Semesters</h2>
+                <p class="text-gray-400 mb-8">How many semesters do you want to calculate?</p>
+                
+                <div class="glass p-8 rounded-2xl">
+                    <input type="number" id="totalSemesters" min="1" max="12" value="2" class="w-full bg-white/10 border border-white/20 rounded-xl px-6 py-4 text-center text-3xl font-bold focus:outline-none focus:border-indigo-500 transition">
+                    <button onclick="showImportOption()" class="w-full mt-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-semibold hover:opacity-90 transition btn-glow">Continue</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Option Screen (for CGPA) -->
+        <div id="importOptionScreen" class="hidden fade-in">
+            <div class="text-center max-w-2xl mx-auto">
+                <button onclick="goBack('semesterCount')" class="mb-8 text-gray-400 hover:text-white transition flex items-center gap-2 mx-auto">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    Back
+                </button>
+                <h2 class="text-3xl font-bold mb-4">Import Previous Data?</h2>
+                <p class="text-gray-400 mb-8">You can import data from previous semesters or enter everything manually</p>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <button onclick="startManualEntry()" class="glass p-8 rounded-2xl hover:bg-white/10 transition btn-glow group">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center group-hover:scale-110 transition">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Enter Manually</h3>
+                        <p class="text-gray-400 text-sm">Enter all semester data from scratch</p>
+                    </button>
+                    <label class="glass p-8 rounded-2xl hover:bg-white/10 transition btn-glow group cursor-pointer file-input-label">
+                        <input type="file" id="jsonFileInput" accept=".json" class="hidden" onchange="handleJSONImport(event)">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center group-hover:scale-110 transition">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Import JSON</h3>
+                        <p class="text-gray-400 text-sm">Import previous semesters data file</p>
+                        <p class="text-indigo-400 text-xs mt-2" id="importHint">Will import <span id="importSemCount">0</span> semester(s), you'll enter semester <span id="currentSemNum">1</span></p>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subject Count -->
+        <div id="subjectCountScreen" class="hidden fade-in">
+            <div class="text-center max-w-md mx-auto">
+                <button onclick="goBackFromSubjectCount()" class="mb-8 text-gray-400 hover:text-white transition flex items-center gap-2 mx-auto">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    Back
+                </button>
+                <div id="semesterIndicator" class="mb-4 text-indigo-400 font-semibold"></div>
+                <h2 class="text-3xl font-bold mb-4">Number of Subjects</h2>
+                <p class="text-gray-400 mb-8">Including both theory and lab courses</p>
+                
+                <div class="glass p-8 rounded-2xl">
+                    <input type="number" id="totalSubjects" min="1" max="15" value="5" class="w-full bg-white/10 border border-white/20 rounded-xl px-6 py-4 text-center text-3xl font-bold focus:outline-none focus:border-indigo-500 transition">
+                    <button onclick="startSubjectEntry()" class="w-full mt-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-semibold hover:opacity-90 transition btn-glow">Continue</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subject Entry -->
+        <div id="subjectEntryScreen" class="hidden fade-in">
+            <div class="max-w-2xl mx-auto">
+                <button onclick="goBack('subjectCount')" class="mb-8 text-gray-400 hover:text-white transition flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    Back
+                </button>
+                <div id="semesterIndicator2" class="mb-4 text-indigo-400 font-semibold text-center"></div>
+                <h2 class="text-3xl font-bold mb-2 text-center">Enter Subject Details</h2>
+                <p class="text-gray-400 mb-8 text-center" id="inputMethodLabel"></p>
+                
+                <div id="subjectsContainer" class="space-y-4"></div>
+                
+                <button onclick="calculateResults()" class="w-full mt-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-semibold hover:opacity-90 transition btn-glow text-lg">
+                    Calculate <span id="calcButtonText">GPA</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Semester Summary (for CGPA) -->
+        <div id="semesterSummaryScreen" class="hidden fade-in">
+            <div class="max-w-2xl mx-auto">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold mb-2" id="semSummaryTitle">Semester 1 Summary</h2>
+                    <p class="text-gray-400">Review before proceeding to next semester</p>
+                </div>
+                
+                <div class="glass rounded-2xl p-6 mb-6">
+                    <div id="semesterSummaryContent"></div>
+                    <div class="mt-6 pt-6 border-t border-white/10 grid grid-cols-2 gap-4 text-center">
+                        <div>
+                            <p class="text-gray-400 text-sm">Semester GPA</p>
+                            <p class="text-3xl font-bold text-green-400" id="semGPADisplay">0.00</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 text-sm">Current CGPA</p>
+                            <p class="text-3xl font-bold text-indigo-400" id="currentCGPADisplay">0.00</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <button onclick="proceedToNextSemester()" class="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-semibold hover:opacity-90 transition btn-glow text-lg" id="nextSemBtn">
+                    Next Semester
+                </button>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="resultsScreen" class="hidden fade-in">
+            <div class="max-w-4xl mx-auto">
+                <div class="flex flex-wrap justify-between items-center mb-8 gap-4">
+                    <button onclick="resetCalculator()" class="text-gray-400 hover:text-white transition flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                        Start Over
+                    </button>
+                    <div class="relative">
+                        <button onclick="toggleExportMenu()" class="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl font-semibold hover:opacity-90 transition flex items-center gap-2" id="exportBtn">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            Export Report
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div id="exportMenu" class="hidden absolute right-0 mt-2 w-64 glass rounded-xl overflow-hidden z-50 fade-in">
+                            <button onclick="exportAsPDF()" class="w-full px-4 py-3 text-left hover:bg-white/10 transition flex items-center gap-3">
+                                <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                                <div>
+                                    <p class="font-medium">Download PDF</p>
+                                    <p class="text-xs text-gray-400">Professional report with graphics</p>
+                                </div>
+                            </button>
+                            <button onclick="exportAsJSON()" class="w-full px-4 py-3 text-left hover:bg-white/10 transition flex items-center gap-3">
+                                <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                                <div>
+                                    <p class="font-medium">Download JSON Data</p>
+                                    <p class="text-xs text-gray-400">Import later for future calculations</p>
+                                </div>
+                            </button>
+                            <button onclick="exportAsHTML()" class="w-full px-4 py-3 text-left hover:bg-white/10 transition flex items-center gap-3">
+                                <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                                <div>
+                                    <p class="font-medium">Download HTML</p>
+                                    <p class="text-xs text-gray-400">Viewable report file</p>
+                                </div>
+                            </button>
+                            <button onclick="copyToClipboard()" class="w-full px-4 py-3 text-left hover:bg-white/10 transition flex items-center gap-3">
+                                <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                                <div>
+                                    <p class="font-medium">Copy to Clipboard</p>
+                                    <p class="text-xs text-gray-400">Share anywhere</p>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Report Card -->
+                <div id="reportCard" class="report-card rounded-2xl overflow-hidden">
+                    <!-- Header -->
+                    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-center">
+                        <h1 class="text-2xl md:text-3xl font-bold mb-1">DEECS Academic Report Card</h1>
+                        <p class="text-indigo-200 text-sm">Department of Electrical, Electronics and Computer Systems</p>
+                    </div>
+                    
+                    <!-- Student Info -->
+                    <div id="studentInfoSection" class="bg-white/5 p-4 border-b border-white/10"></div>
+                    
+                    <!-- Content -->
+                    <div class="p-6" id="reportCardContent"></div>
+                    
+                    <!-- Footer -->
+                    <div class="bg-white/5 p-4 text-center text-gray-400 text-sm border-t border-white/10">
+                        <p>Generated by DEECS CGPA/GPA Calculator • <span id="reportDate"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // State Management
+        let state = {
+            mode: '', // 'semester' or 'cgpa'
+            inputMethod: '', // 'marks' or 'gpa'
+            totalSemesters: 1,
+            currentSemester: 1,
+            semesters: [],
+            currentSubjects: [],
+            studentName: '',
+            studentRoll: '',
+            studentProgram: '',
+            importedSemesters: 0
+        };
+
+        // Load saved state
+        function loadState() {
+            const saved = localStorage.getItem('deecsCalculatorState');
+            if (saved) {
+                try {
+                    state = JSON.parse(saved);
+                } catch(e) {}
+            }
+        }
+
+        // Save state
+        function saveState() {
+            localStorage.setItem('deecsCalculatorState', JSON.stringify(state));
+        }
+
+        // Marks to GPA conversion
+        function marksToGPA(marks) {
+            marks = Math.round(marks);
+            if (marks >= 80) return 4.00;
+            if (marks === 79) return 3.94;
+            if (marks === 78) return 3.87;
+            if (marks === 77) return 3.80;
+            if (marks === 76) return 3.74;
+            if (marks === 75) return 3.67;
+            if (marks === 74) return 3.60;
+            if (marks === 73) return 3.54;
+            if (marks === 72) return 3.47;
+            if (marks === 71) return 3.40;
+            if (marks === 70) return 3.34;
+            if (marks === 69) return 3.27;
+            if (marks === 68) return 3.20;
+            if (marks === 67) return 3.14;
+            if (marks === 66) return 3.07;
+            if (marks === 65) return 3.00;
+            if (marks === 64) return 2.92;
+            if (marks === 63) return 2.85;
+            if (marks === 62) return 2.78;
+            if (marks === 61) return 2.70;
+            if (marks === 60) return 2.64;
+            if (marks === 59) return 2.57;
+            if (marks === 58) return 2.50;
+            if (marks === 57) return 2.43;
+            if (marks === 56) return 2.36;
+            if (marks === 55) return 2.30;
+            if (marks === 54) return 2.24;
+            if (marks === 53) return 2.18;
+            if (marks === 52) return 2.12;
+            if (marks === 51) return 2.06;
+            if (marks === 50) return 2.00;
+            if (marks === 49) return 1.90;
+            if (marks === 48) return 1.80;
+            if (marks === 47) return 1.70;
+            if (marks === 46) return 1.60;
+            if (marks === 45) return 1.50;
+            if (marks === 44) return 1.40;
+            if (marks === 43) return 1.30;
+            if (marks === 42) return 1.20;
+            if (marks === 41) return 1.10;
+            if (marks === 40) return 1.00;
+            return 0.00;
+        }
+
+        // GPA to Grade
+        function gpaToGrade(gpa) {
+            if (gpa > 4) return 'ERROR';
+            if (gpa === 4) return 'A';
+            if (gpa > 2.92) return 'B';
+            if (gpa > 1.9) return 'C';
+            if (gpa > 0) return 'D';
+            return 'F';
+        }
+
+        // Get remarks
+        function getRemarks(grade) {
+            if (grade === 'D') return { text: 'Repeat', color: 'text-orange-400' };
+            if (grade === 'F') return { text: 'Fail', color: 'text-red-400' };
+            if (grade === 'ERROR') return { text: 'Invalid', color: 'text-red-400' };
+            return { text: 'Pass', color: 'text-green-400' };
+        }
+
+        // Screen Navigation
+        function showScreen(screenId) {
+            document.querySelectorAll('main > div').forEach(div => div.classList.add('hidden'));
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        function selectMode(mode) {
+            state.mode = mode;
+            state.semesters = [];
+            state.currentSemester = 1;
+            state.importedSemesters = 0;
+            saveState();
+            showScreen('studentNameScreen');
+        }
+
+        function saveStudentInfo() {
+            state.studentName = document.getElementById('studentName').value.trim() || 'Student';
+            state.studentRoll = document.getElementById('studentRoll').value.trim();
+            state.studentProgram = document.getElementById('studentProgram').value.trim();
+            saveState();
+            showScreen('inputMethodScreen');
+        }
+
+        function selectInputMethod(method) {
+            state.inputMethod = method;
+            saveState();
+            if (state.mode === 'cgpa') {
+                showScreen('semesterCountScreen');
+            } else {
+                showScreen('subjectCountScreen');
+                document.getElementById('semesterIndicator').textContent = '';
+            }
+        }
+
+        function showImportOption() {
+            state.totalSemesters = parseInt(document.getElementById('totalSemesters').value) || 1;
+            saveState();
+            
+            if (state.totalSemesters > 1) {
+                document.getElementById('importSemCount').textContent = state.totalSemesters - 1;
+                document.getElementById('currentSemNum').textContent = state.totalSemesters;
+                showScreen('importOptionScreen');
+            } else {
+                startManualEntry();
+            }
+        }
+
+        function startManualEntry() {
+            state.currentSemester = 1;
+            state.semesters = [];
+            state.importedSemesters = 0;
+            saveState();
+            showScreen('subjectCountScreen');
+            updateSemesterIndicator();
+        }
+
+        function handleJSONImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    // Validate the data
+                    if (!data.semesters || !Array.isArray(data.semesters)) {
+                        showToast('Invalid JSON file format', 'error');
+                        return;
+                    }
+                    
+                    // Import student info if available
+                    if (data.studentName) state.studentName = data.studentName;
+                    if (data.studentRoll) state.studentRoll = data.studentRoll;
+                    if (data.studentProgram) state.studentProgram = data.studentProgram;
+                    
+                    // Import only n-1 semesters
+                    const semestersToImport = Math.min(data.semesters.length, state.totalSemesters - 1);
+                    state.semesters = data.semesters.slice(0, semestersToImport);
+                    state.importedSemesters = semestersToImport;
+                    state.currentSemester = semestersToImport + 1;
+                    
+                    // Renumber the semesters
+                    state.semesters.forEach((sem, idx) => {
+                        sem.number = idx + 1;
+                    });
+                    
+                    saveState();
+                    showToast(`Imported ${semestersToImport} semester(s) successfully!`, 'success');
+                    
+                    // Go to subject count for the next semester
+                    showScreen('subjectCountScreen');
+                    updateSemesterIndicator();
+                    
+                } catch (err) {
+                    showToast('Error reading JSON file: ' + err.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function startCGPACalculation() {
+            state.totalSemesters = parseInt(document.getElementById('totalSemesters').value) || 1;
+            state.currentSemester = 1;
+            state.semesters = [];
+            saveState();
+            showScreen('subjectCountScreen');
+            updateSemesterIndicator();
+        }
+
+        function updateSemesterIndicator() {
+            const indicator = `Semester ${state.currentSemester} of ${state.totalSemesters}`;
+            document.getElementById('semesterIndicator').textContent = indicator;
+            document.getElementById('semesterIndicator2').textContent = indicator;
+        }
+
+        function startSubjectEntry() {
+            const numSubjects = parseInt(document.getElementById('totalSubjects').value) || 5;
+            state.currentSubjects = [];
+            
+            const container = document.getElementById('subjectsContainer');
+            container.innerHTML = '';
+            
+            document.getElementById('inputMethodLabel').textContent = 
+                state.inputMethod === 'marks' ? 'Enter marks (0-100) for each subject' : 'Enter GPA (0.00-4.00) for each subject';
+            
+            document.getElementById('calcButtonText').textContent = state.mode === 'cgpa' ? 'Results' : 'GPA';
+
+            for (let i = 0; i < numSubjects; i++) {
+                const subjectCard = document.createElement('div');
+                subjectCard.className = 'glass rounded-xl p-5 fade-in';
+                subjectCard.style.animationDelay = `${i * 0.05}s`;
+                
+                subjectCard.innerHTML = `
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-sm">${i + 1}</div>
+                        <input type="text" placeholder="Subject Name" class="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500 transition" id="subjectName${i}">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-gray-400 text-sm mb-1 block">Credit Hours</label>
+                            <input type="number" min="1" max="6" value="3" class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500 transition text-center" id="credits${i}">
+                        </div>
+                        <div>
+                            <label class="text-gray-400 text-sm mb-1 block">${state.inputMethod === 'marks' ? 'Marks (0-100)' : 'GPA (0-4)'}</label>
+                            <input type="number" min="0" max="${state.inputMethod === 'marks' ? '100' : '4'}" step="${state.inputMethod === 'marks' ? '1' : '0.01'}" class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500 transition text-center" id="value${i}">
+                        </div>
+                    </div>
+                `;
+                container.appendChild(subjectCard);
+            }
+            
+            showScreen('subjectEntryScreen');
+            if (state.mode === 'cgpa') updateSemesterIndicator();
+        }
+
+        function calculateResults() {
+            const numSubjects = document.getElementById('subjectsContainer').children.length;
+            const subjects = [];
+            let totalCredits = 0;
+            let totalImpact = 0;
+
+            for (let i = 0; i < numSubjects; i++) {
+                const name = document.getElementById(`subjectName${i}`).value || `Subject ${i + 1}`;
+                const credits = parseFloat(document.getElementById(`credits${i}`).value) || 0;
+                let value = parseFloat(document.getElementById(`value${i}`).value) || 0;
+                
+                let gpa;
+                if (state.inputMethod === 'marks') {
+                    gpa = marksToGPA(value);
+                } else {
+                    gpa = Math.min(4, Math.max(0, value));
+                }
+                
+                const impact = gpa * credits;
+                const grade = gpaToGrade(gpa);
+                const remarks = getRemarks(grade);
+                
+                subjects.push({
+                    name,
+                    credits,
+                    marks: state.inputMethod === 'marks' ? value : null,
+                    gpa,
+                    impact,
+                    grade,
+                    remarks
+                });
+                
+                totalCredits += credits;
+                totalImpact += impact;
+            }
+
+            const semesterGPA = totalCredits > 0 ? totalImpact / totalCredits : 0;
+            
+            const semesterData = {
+                number: state.currentSemester,
+                subjects,
+                totalCredits,
+                totalImpact,
+                gpa: semesterGPA
+            };
+
+            if (state.mode === 'cgpa') {
+                state.semesters.push(semesterData);
+                saveState();
+                showSemesterSummary(semesterData);
+            } else {
+                state.semesters = [semesterData];
+                saveState();
+                showFinalResults();
+            }
+        }
+
+        function showSemesterSummary(semesterData) {
+            document.getElementById('semSummaryTitle').textContent = `Semester ${state.currentSemester} Summary`;
+            
+            // Calculate current CGPA
+            let totalCredits = 0;
+            let totalImpact = 0;
+            state.semesters.forEach(sem => {
+                totalCredits += sem.totalCredits;
+                totalImpact += sem.totalImpact;
+            });
+            const cgpa = totalCredits > 0 ? totalImpact / totalCredits : 0;
+            
+            // Build summary table
+            let html = `
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-gray-400 border-b border-white/10">
+                            <th class="text-left py-2">Subject</th>
+                            <th class="text-center py-2">CH</th>
+                            <th class="text-center py-2">GPA</th>
+                            <th class="text-center py-2">Grade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            semesterData.subjects.forEach(sub => {
+                html += `
+                    <tr class="border-b border-white/5">
+                        <td class="py-2">${sub.name}</td>
+                        <td class="text-center">${sub.credits}</td>
+                        <td class="text-center">${sub.gpa.toFixed(2)}</td>
+                        <td class="text-center"><span class="${sub.remarks.color}">${sub.grade}</span></td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            
+            document.getElementById('semesterSummaryContent').innerHTML = html;
+            document.getElementById('semGPADisplay').textContent = semesterData.gpa.toFixed(2);
+            document.getElementById('currentCGPADisplay').textContent = cgpa.toFixed(2);
+            
+            // Update button text
+            const nextBtn = document.getElementById('nextSemBtn');
+            if (state.currentSemester >= state.totalSemesters) {
+                nextBtn.textContent = 'View Final Report Card';
+            } else {
+                nextBtn.textContent = 'Next Semester →';
+            }
+            
+            showScreen('semesterSummaryScreen');
+        }
+
+        function proceedToNextSemester() {
+            if (state.currentSemester >= state.totalSemesters) {
+                showFinalResults();
+            } else {
+                state.currentSemester++;
+                saveState();
+                showScreen('subjectCountScreen');
+                updateSemesterIndicator();
+            }
+        }
+
+        function showFinalResults() {
+            // Student Info Section
+            let studentInfoHTML = `
+                <div class="grid md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <span class="text-gray-400">Student Name:</span>
+                        <span class="ml-2 font-semibold">${state.studentName || 'N/A'}</span>
+                    </div>
+                    ${state.studentRoll ? `
+                    <div>
+                        <span class="text-gray-400">Roll Number:</span>
+                        <span class="ml-2 font-semibold">${state.studentRoll}</span>
+                    </div>
+                    ` : ''}
+                    ${state.studentProgram ? `
+                    <div>
+                        <span class="text-gray-400">Program:</span>
+                        <span class="ml-2 font-semibold">${state.studentProgram}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            document.getElementById('studentInfoSection').innerHTML = studentInfoHTML;
+            
+            let html = '';
+            let totalCredits = 0;
+            let totalImpact = 0;
+            
+            let runningCredits = 0;
+            let runningImpact = 0;
+            
+            state.semesters.forEach((sem, semIndex) => {
+                // Calculate running CGPA up to this semester
+                runningCredits += sem.totalCredits;
+                runningImpact += sem.totalImpact;
+                const runningCGPA = runningCredits > 0 ? runningImpact / runningCredits : 0;
+                
+                if (semIndex > 0) {
+                    html += '<div class="semester-divider my-6"></div>';
+                }
+                
+                if (state.mode === 'cgpa') {
+                    const isImported = semIndex < state.importedSemesters;
+                    html += `
+                        <div class="flex flex-wrap items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-sm">${sem.number}</div>
+                            <h3 class="text-lg font-semibold">Semester ${sem.number}</h3>
+                            ${isImported ? '<span class="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Imported</span>' : ''}
+                            <div class="ml-auto flex gap-4">
+                                <span class="text-green-400 font-semibold">GPA: ${sem.gpa.toFixed(2)}</span>
+                                <span class="text-indigo-400 font-semibold">CGPA: ${runningCGPA.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                html += `
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="text-gray-400 border-b border-white/10 text-left">
+                                    <th class="py-3 pr-4">Subject Title</th>
+                                    <th class="py-3 px-2 text-center">Credit Hours</th>
+                                    <th class="py-3 px-2 text-center">Grade Points</th>
+                                    <th class="py-3 px-2 text-center">Grade</th>
+                                    <th class="py-3 pl-2 text-center">Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                sem.subjects.forEach(sub => {
+                    html += `
+                        <tr class="border-b border-white/5 hover:bg-white/5">
+                            <td class="py-3 pr-4">${sub.name}</td>
+                            <td class="py-3 px-2 text-center">${sub.credits}</td>
+                            <td class="py-3 px-2 text-center font-mono">${sub.gpa.toFixed(2)}</td>
+                            <td class="py-3 px-2 text-center font-bold">${sub.grade}</td>
+                            <td class="py-3 pl-2 text-center ${sub.remarks.color}">${sub.remarks.text}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-3 text-right text-gray-400 text-sm">
+                        Total Credit Hours: <span class="text-white font-semibold">${sem.totalCredits}</span>
+                    </div>
+                `;
+                
+                totalCredits += sem.totalCredits;
+                totalImpact += sem.totalImpact;
+            });
+            
+            const finalGPA = totalCredits > 0 ? totalImpact / totalCredits : 0;
+            
+            // Final Summary
+            html += `
+                <div class="mt-8 pt-6 border-t-2 border-indigo-500/50">
+                    <div class="grid ${state.mode === 'cgpa' ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4 text-center">
+                        <div class="glass rounded-xl p-4">
+                            <p class="text-gray-400 text-sm mb-1">Total Credit Hours</p>
+                            <p class="text-2xl font-bold">${totalCredits}</p>
+                        </div>
+                        <div class="glass rounded-xl p-4">
+                            <p class="text-gray-400 text-sm mb-1">Total Subjects</p>
+                            <p class="text-2xl font-bold">${state.semesters.reduce((acc, sem) => acc + sem.subjects.length, 0)}</p>
+                        </div>
+                        ${state.mode === 'cgpa' ? `
+                        <div class="glass rounded-xl p-4">
+                            <p class="text-gray-400 text-sm mb-1">Total Semesters</p>
+                            <p class="text-2xl font-bold">${state.semesters.length}</p>
+                        </div>
+                        ` : ''}
+                    </div>
+                    <div class="mt-6 text-center">
+                        <p class="text-gray-400 text-sm mb-2">${state.mode === 'cgpa' ? 'Cumulative GPA (CGPA)' : 'Semester GPA'}</p>
+                        <p class="text-5xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">${finalGPA.toFixed(2)}</p>
+                        <p class="mt-2 text-xl font-semibold ${finalGPA >= 3.5 ? 'text-green-400' : finalGPA >= 3.0 ? 'text-blue-400' : finalGPA >= 2.0 ? 'text-yellow-400' : 'text-red-400'}">
+                            ${finalGPA >= 3.5 ? '🎉 Excellent!' : finalGPA >= 3.0 ? '👍 Good Performance' : finalGPA >= 2.0 ? '📚 Keep Improving' : '⚠️ Needs Improvement'}
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('reportCardContent').innerHTML = html;
+            document.getElementById('reportDate').textContent = new Date().toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            showScreen('resultsScreen');
+        }
+
+        // Toggle export menu
+        function toggleExportMenu() {
+            const menu = document.getElementById('exportMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Close menu when clicking outside
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('exportMenu');
+            const btn = document.getElementById('exportBtn');
+            if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+
+        // Generate report data
+        function generateReportData() {
+            let totalCredits = 0;
+            let totalImpact = 0;
+            state.semesters.forEach(sem => {
+                totalCredits += sem.totalCredits;
+                totalImpact += sem.totalImpact;
+            });
+            const finalGPA = totalCredits > 0 ? totalImpact / totalCredits : 0;
+            return { totalCredits, totalImpact, finalGPA };
+        }
+
+        // Export as PDF with jsPDF
+        function exportAsPDF() {
+            toggleExportMenu();
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const { totalCredits, finalGPA } = generateReportData();
+            const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            
+            // Colors
+            const primaryColor = [79, 70, 229]; // Indigo
+            const secondaryColor = [124, 58, 237]; // Purple
+            const greenColor = [16, 185, 129];
+            const orangeColor = [245, 158, 11];
+            const redColor = [239, 68, 68];
+            
+            // Header gradient background
+            doc.setFillColor(...primaryColor);
+            doc.rect(0, 0, 210, 40, 'F');
+            
+            // Header text
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text('DEECS Academic Report Card', 105, 18, { align: 'center' });
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Department of Electrical, Electronics and Computer Systems', 105, 28, { align: 'center' });
+            
+            // Student Info Box
+            doc.setFillColor(248, 250, 252);
+            doc.roundedRect(14, 45, 182, 25, 3, 3, 'F');
+            doc.setTextColor(100, 100, 100);
+            doc.setFontSize(9);
+            doc.text('Student Name:', 20, 54);
+            doc.text('Roll Number:', 80, 54);
+            doc.text('Program:', 140, 54);
+            doc.setTextColor(30, 30, 30);
+            doc.setFont('helvetica', 'bold');
+            doc.text(state.studentName || 'N/A', 20, 62);
+            doc.text(state.studentRoll || 'N/A', 80, 62);
+            doc.text(state.studentProgram || 'N/A', 140, 62);
+            
+            let yPos = 80;
+            let pdfRunningCredits = 0;
+            let pdfRunningImpact = 0;
+            
+            // Semesters
+            state.semesters.forEach((sem, semIndex) => {
+                // Calculate running CGPA
+                pdfRunningCredits += sem.totalCredits;
+                pdfRunningImpact += sem.totalImpact;
+                const pdfRunningCGPA = pdfRunningCredits > 0 ? pdfRunningImpact / pdfRunningCredits : 0;
+                
+                // Check if we need a new page
+                if (yPos > 250) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                if (state.mode === 'cgpa') {
+                    // Semester header
+                    doc.setFillColor(...primaryColor);
+                    doc.roundedRect(14, yPos - 5, 182, 10, 2, 2, 'F');
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFontSize(11);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(`SEMESTER ${sem.number}`, 20, yPos + 2);
+                    doc.text(`GPA: ${sem.gpa.toFixed(2)}  |  CGPA: ${pdfRunningCGPA.toFixed(2)}`, 180, yPos + 2, { align: 'right' });
+                    yPos += 12;
+                }
+                
+                // Table headers
+                doc.setFillColor(241, 245, 249);
+                doc.rect(14, yPos, 182, 8, 'F');
+                doc.setTextColor(100, 100, 100);
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Subject Title', 16, yPos + 5.5);
+                doc.text('CH', 120, yPos + 5.5, { align: 'center' });
+                doc.text('GPA', 140, yPos + 5.5, { align: 'center' });
+                doc.text('Grade', 160, yPos + 5.5, { align: 'center' });
+                doc.text('Remarks', 185, yPos + 5.5, { align: 'center' });
+                yPos += 10;
+                
+                // Table rows
+                doc.setFont('helvetica', 'normal');
+                sem.subjects.forEach((sub, idx) => {
+                    if (yPos > 270) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    // Alternating row colors
+                    if (idx % 2 === 0) {
+                        doc.setFillColor(249, 250, 251);
+                        doc.rect(14, yPos - 1, 182, 7, 'F');
+                    }
+                    
+                    doc.setTextColor(30, 30, 30);
+                    doc.setFontSize(9);
+                    
+                    // Truncate long names
+                    let subName = sub.name;
+                    if (subName.length > 40) subName = subName.substring(0, 37) + '...';
+                    doc.text(subName, 16, yPos + 4);
+                    doc.text(String(sub.credits), 120, yPos + 4, { align: 'center' });
+                    doc.text(sub.gpa.toFixed(2), 140, yPos + 4, { align: 'center' });
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(sub.grade, 160, yPos + 4, { align: 'center' });
+                    
+                    // Remarks color
+                    if (sub.remarks.text === 'Pass') {
+                        doc.setTextColor(...greenColor);
+                    } else if (sub.remarks.text === 'Repeat') {
+                        doc.setTextColor(...orangeColor);
+                    } else {
+                        doc.setTextColor(...redColor);
+                    }
+                    doc.text(sub.remarks.text, 185, yPos + 4, { align: 'center' });
+                    doc.setFont('helvetica', 'normal');
+                    
+                    yPos += 7;
+                });
+                
+                // Semester total
+                doc.setTextColor(100, 100, 100);
+                doc.setFontSize(8);
+                doc.text(`Credit Hours: ${sem.totalCredits}`, 180, yPos + 3, { align: 'right' });
+                yPos += 15;
+            });
+            
+            // Final Summary Box
+            if (yPos > 230) {
+                doc.addPage();
+                yPos = 20;
+            }
+            
+            doc.setFillColor(...greenColor);
+            doc.roundedRect(14, yPos, 182, 35, 4, 4, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text(state.mode === 'cgpa' ? 'CUMULATIVE GPA (CGPA)' : 'SEMESTER GPA', 105, yPos + 10, { align: 'center' });
+            doc.setFontSize(28);
+            doc.setFont('helvetica', 'bold');
+            doc.text(finalGPA.toFixed(2), 105, yPos + 26, { align: 'center' });
+            
+            yPos += 45;
+            
+            // Stats
+            doc.setFillColor(248, 250, 252);
+            doc.roundedRect(14, yPos, 60, 20, 2, 2, 'F');
+            doc.roundedRect(75, yPos, 60, 20, 2, 2, 'F');
+            if (state.mode === 'cgpa') {
+                doc.roundedRect(136, yPos, 60, 20, 2, 2, 'F');
+            }
+            
+            doc.setTextColor(100, 100, 100);
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Total Credit Hours', 44, yPos + 7, { align: 'center' });
+            doc.text('Total Subjects', 105, yPos + 7, { align: 'center' });
+            if (state.mode === 'cgpa') {
+                doc.text('Total Semesters', 166, yPos + 7, { align: 'center' });
+            }
+            
+            doc.setTextColor(...primaryColor);
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text(String(totalCredits), 44, yPos + 16, { align: 'center' });
+            doc.text(String(state.semesters.reduce((acc, sem) => acc + sem.subjects.length, 0)), 105, yPos + 16, { align: 'center' });
+            if (state.mode === 'cgpa') {
+                doc.text(String(state.semesters.length), 166, yPos + 16, { align: 'center' });
+            }
+            
+            // Footer
+            doc.setTextColor(150, 150, 150);
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Generated by DEECS CGPA/GPA Calculator • ${date}`, 105, 285, { align: 'center' });
+            doc.text('Developer: Muntazir Mahdi', 105, 290, { align: 'center' });
+            
+            // Save PDF
+            doc.save(`DEECS_Report_${state.studentName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+            showToast('PDF downloaded successfully!', 'success');
+        }
+
+        // Export as JSON
+        function exportAsJSON() {
+            toggleExportMenu();
+            
+            const exportData = {
+                version: '2.0',
+                exportDate: new Date().toISOString(),
+                studentName: state.studentName,
+                studentRoll: state.studentRoll,
+                studentProgram: state.studentProgram,
+                mode: state.mode,
+                inputMethod: state.inputMethod,
+                semesters: state.semesters.map(sem => ({
+                    number: sem.number,
+                    gpa: sem.gpa,
+                    totalCredits: sem.totalCredits,
+                    totalImpact: sem.totalImpact,
+                    subjects: sem.subjects.map(sub => ({
+                        name: sub.name,
+                        credits: sub.credits,
+                        gpa: sub.gpa,
+                        marks: sub.marks,
+                        grade: sub.grade,
+                        remarks: sub.remarks
+                    }))
+                }))
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `DEECS_Data_${state.studentName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showToast('JSON data exported! Use this file to import later.', 'success');
+        }
+
+        // Export as HTML file
+        function exportAsHTML() {
+            toggleExportMenu();
+            const { finalGPA } = generateReportData();
+            
+            const htmlContent = generatePrintableHTML(finalGPA);
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `DEECS_Report_${state.studentName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.html`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showToast('HTML file downloaded successfully!', 'success');
+        }
+
+        // Copy to Clipboard
+        async function copyToClipboard() {
+            toggleExportMenu();
+            const { totalCredits, finalGPA } = generateReportData();
+            
+            let text = `📚 DEECS ACADEMIC REPORT CARD\n`;
+            text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+            text += `👤 Student: ${state.studentName}\n`;
+            if (state.studentRoll) text += `🆔 Roll: ${state.studentRoll}\n`;
+            if (state.studentProgram) text += `📖 Program: ${state.studentProgram}\n`;
+            text += `\n`;
+            
+            let clipRunningCredits = 0;
+            let clipRunningImpact = 0;
+            
+            state.semesters.forEach((sem, idx) => {
+                // Calculate running CGPA
+                clipRunningCredits += sem.totalCredits;
+                clipRunningImpact += sem.totalImpact;
+                const clipRunningCGPA = clipRunningCredits > 0 ? clipRunningImpact / clipRunningCredits : 0;
+                
+                if (state.mode === 'cgpa') {
+                    text += `📅 SEMESTER ${sem.number}\n`;
+                    text += `────────────────────\n`;
+                }
+                
+                sem.subjects.forEach(sub => {
+                    const icon = sub.remarks.text === 'Pass' ? '✅' : sub.remarks.text === 'Repeat' ? '🔄' : '❌';
+                    text += `${icon} ${sub.name}: ${sub.gpa.toFixed(2)} (${sub.grade}) - ${sub.credits} CH\n`;
+                });
+                
+                if (state.mode === 'cgpa') {
+                    text += `\n📊 Semester GPA: ${sem.gpa.toFixed(2)} | CGPA: ${clipRunningCGPA.toFixed(2)}\n\n`;
+                } else {
+                    text += `\n📊 Semester GPA: ${sem.gpa.toFixed(2)}\n\n`;
+                }
+            });
+            
+            text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+            text += `🎯 ${state.mode === 'cgpa' ? 'CGPA' : 'GPA'}: ${finalGPA.toFixed(2)}\n`;
+            text += `📖 Total Credits: ${totalCredits}\n`;
+            text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+            
+            try {
+                await navigator.clipboard.writeText(text);
+                showToast('Copied to clipboard!', 'success');
+            } catch(e) {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast('Copied to clipboard!', 'success');
+            }
+        }
+
+        // Generate printable HTML
+        function generatePrintableHTML(finalGPA) {
+            const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            
+            let subjectsHTML = '';
+            let htmlRunningCredits = 0;
+            let htmlRunningImpact = 0;
+            
+            state.semesters.forEach((sem, idx) => {
+                // Calculate running CGPA
+                htmlRunningCredits += sem.totalCredits;
+                htmlRunningImpact += sem.totalImpact;
+                const htmlRunningCGPA = htmlRunningCredits > 0 ? htmlRunningImpact / htmlRunningCredits : 0;
+                
+                if (state.mode === 'cgpa') {
+                    subjectsHTML += `
+                        <tr style="background: linear-gradient(90deg, #4f46e5, #7c3aed); color: white;">
+                            <td colspan="3" style="padding: 12px; font-weight: bold; font-size: 14px;">
+                                SEMESTER ${sem.number}
+                            </td>
+                            <td colspan="2" style="padding: 12px; font-weight: bold; font-size: 14px; text-align: right;">
+                                GPA: ${sem.gpa.toFixed(2)} | CGPA: ${htmlRunningCGPA.toFixed(2)}
+                            </td>
+                        </tr>
+                    `;
+                }
+                
+                sem.subjects.forEach(sub => {
+                    const remarkColor = sub.remarks.text === 'Pass' ? '#10b981' : sub.remarks.text === 'Repeat' ? '#f59e0b' : '#ef4444';
+                    subjectsHTML += `
+                        <tr style="border-bottom: 1px solid #e5e7eb;">
+                            <td style="padding: 10px; border-right: 1px solid #e5e7eb;">${sub.name}</td>
+                            <td style="padding: 10px; text-align: center; border-right: 1px solid #e5e7eb;">${sub.credits}</td>
+                            <td style="padding: 10px; text-align: center; font-family: monospace; border-right: 1px solid #e5e7eb;">${sub.gpa.toFixed(2)}</td>
+                            <td style="padding: 10px; text-align: center; font-weight: bold; border-right: 1px solid #e5e7eb;">${sub.grade}</td>
+                            <td style="padding: 10px; text-align: center; color: ${remarkColor}; font-weight: 500;">${sub.remarks.text}</td>
+                        </tr>
+                    `;
+                });
+            });
+
+            const totalSubjects = state.semesters.reduce((acc, sem) => acc + sem.subjects.length, 0);
+            const totalCredits = state.semesters.reduce((acc, sem) => acc + sem.totalCredits, 0);
+
+            return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>DEECS Report Card - ${state.studentName}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f3f4f6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 { font-size: 24px; margin-bottom: 5px; }
+        .header p { opacity: 0.9; font-size: 14px; }
+        .student-info {
+            background: #f8fafc;
+            padding: 15px 30px;
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .student-info div span:first-child { color: #6b7280; font-size: 12px; }
+        .student-info div span:last-child { font-weight: 600; margin-left: 8px; }
+        .content { padding: 30px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th { 
+            background: #f8fafc; 
+            padding: 12px; 
+            text-align: left; 
+            font-weight: 600;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .summary {
+            display: flex;
+            justify-content: space-around;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+        .summary-item { text-align: center; }
+        .summary-item .value { font-size: 28px; font-weight: bold; color: #4f46e5; }
+        .summary-item .label { font-size: 12px; color: #6b7280; margin-top: 4px; }
+        .final-gpa {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+        .final-gpa .value { font-size: 48px; font-weight: bold; color: white; }
+        .final-gpa .label { font-size: 14px; color: rgba(255,255,255,0.9); }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background: #f8fafc;
+            color: #6b7280;
+            font-size: 12px;
+            border-top: 1px solid #e5e7eb;
+        }
+        @media print {
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 DEECS ACADEMIC REPORT CARD</h1>
+            <p>Department of Electrical, Electronics and Computer Systems</p>
+        </div>
+        <div class="student-info">
+            <div><span>Student Name:</span><span>${state.studentName}</span></div>
+            ${state.studentRoll ? `<div><span>Roll Number:</span><span>${state.studentRoll}</span></div>` : ''}
+            ${state.studentProgram ? `<div><span>Program:</span><span>${state.studentProgram}</span></div>` : ''}
+        </div>
+        <div class="content">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="border-right: 1px solid #e5e7eb;">Subject Title</th>
+                        <th style="text-align: center; border-right: 1px solid #e5e7eb;">Credit Hours</th>
+                        <th style="text-align: center; border-right: 1px solid #e5e7eb;">Grade Points</th>
+                        <th style="text-align: center; border-right: 1px solid #e5e7eb;">Grade</th>
+                        <th style="text-align: center;">Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${subjectsHTML}
+                </tbody>
+            </table>
+            
+            <div class="summary">
+                <div class="summary-item">
+                    <div class="value">${totalCredits}</div>
+                    <div class="label">Total Credit Hours</div>
+                </div>
+                <div class="summary-item">
+                    <div class="value">${totalSubjects}</div>
+                    <div class="label">Total Subjects</div>
+                </div>
+                ${state.mode === 'cgpa' ? `
+                <div class="summary-item">
+                    <div class="value">${state.semesters.length}</div>
+                    <div class="label">Semesters</div>
+                </div>
+                ` : ''}
+            </div>
+            
+            <div class="final-gpa">
+                <div class="label">${state.mode === 'cgpa' ? 'CUMULATIVE GPA (CGPA)' : 'SEMESTER GPA'}</div>
+                <div class="value">${finalGPA.toFixed(2)}</div>
+            </div>
+        </div>
+        <div class="footer">
+            <p>Generated by DEECS CGPA/GPA Calculator • ${date}</p>
+            <p style="margin-top: 5px;">Developer: Muntazir Mahdi</p>
+        </div>
+    </div>
+</body>
+</html>`;
+        }
+        
+        // Toast notification system
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            const colors = {
+                success: 'from-green-600 to-emerald-600',
+                error: 'from-red-600 to-rose-600',
+                info: 'from-blue-600 to-indigo-600'
+            };
+            toast.className = `fixed bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-gradient-to-r ${colors[type]} rounded-xl shadow-lg z-50 fade-in flex items-center gap-3`;
+            
+            const icons = {
+                success: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>',
+                error: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>',
+                info: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
+            };
+            
+            toast.innerHTML = `${icons[type]}<span>${message}</span>`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Navigation helpers
+        function goBack(screen) {
+            if (screen === 'welcome') {
+                showScreen('welcomeScreen');
+            } else if (screen === 'studentName') {
+                showScreen('studentNameScreen');
+            } else if (screen === 'inputMethod') {
+                showScreen('inputMethodScreen');
+            } else if (screen === 'semesterCount') {
+                showScreen('semesterCountScreen');
+            } else if (screen === 'subjectCount') {
+                showScreen('subjectCountScreen');
+            }
+        }
+
+        function goBackFromSubjectCount() {
+            if (state.mode === 'cgpa') {
+                if (state.currentSemester === 1 || state.currentSemester === state.importedSemesters + 1) {
+                    if (state.totalSemesters > 1) {
+                        showScreen('importOptionScreen');
+                    } else {
+                        showScreen('semesterCountScreen');
+                    }
+                } else {
+                    // Go back to previous semester summary
+                    state.currentSemester--;
+                    state.semesters.pop();
+                    saveState();
+                    showScreen('subjectCountScreen');
+                    updateSemesterIndicator();
+                }
+            } else {
+                showScreen('inputMethodScreen');
+            }
+        }
+
+        function resetCalculator() {
+            state = {
+                mode: '',
+                inputMethod: '',
+                totalSemesters: 1,
+                currentSemester: 1,
+                semesters: [],
+                currentSubjects: [],
+                studentName: '',
+                studentRoll: '',
+                studentProgram: '',
+                importedSemesters: 0
+            };
+            saveState();
+            showScreen('welcomeScreen');
+        }
+
+        // About Modal
+        function showAbout() {
+            document.getElementById('aboutModal').classList.remove('hidden');
+            document.getElementById('aboutModal').classList.add('flex');
+        }
+
+        function closeAbout() {
+            document.getElementById('aboutModal').classList.add('hidden');
+            document.getElementById('aboutModal').classList.remove('flex');
+        }
+
+        // Close modal on outside click
+        document.getElementById('aboutModal').addEventListener('click', function(e) {
+            if (e.target === this) closeAbout();
+        });
+
+        // Theme Toggle Functions
+        function toggleTheme() {
+            const body = document.body;
+            const isLightMode = body.classList.toggle('light-mode');
+            
+            // Update icons
+            const moonIcon = document.getElementById('moonIcon');
+            const sunIcon = document.getElementById('sunIcon');
+            
+            if (isLightMode) {
+                moonIcon.classList.add('hidden');
+                sunIcon.classList.remove('hidden');
+            } else {
+                moonIcon.classList.remove('hidden');
+                sunIcon.classList.add('hidden');
+            }
+            
+            // Save preference
+            localStorage.setItem('deecsTheme', isLightMode ? 'light' : 'dark');
+            
+            showToast(isLightMode ? '☀️ Light mode enabled' : '🌙 Dark mode enabled', 'info');
+        }
+        
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('deecsTheme');
+            const moonIcon = document.getElementById('moonIcon');
+            const sunIcon = document.getElementById('sunIcon');
+            
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+                moonIcon.classList.add('hidden');
+                sunIcon.classList.remove('hidden');
+            }
+        }
+
+        // Initialize
+        loadState();
+        loadTheme();
+        
+        // Restore student info fields if available
+        if (state.studentName) {
+            document.getElementById('studentName').value = state.studentName;
+        }
+        if (state.studentRoll) {
+            document.getElementById('studentRoll').value = state.studentRoll;
+        }
+        if (state.studentProgram) {
+            document.getElementById('studentProgram').value = state.studentProgram;
+        }
+    </script>
+</body>
+</html>
