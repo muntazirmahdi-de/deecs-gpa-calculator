@@ -394,6 +394,11 @@
                     </div>
                 </div>
                 
+                <button onclick="editCurrentSemester()" class="w-full py-4 bg-gradient-to-r from-orange-600 to-amber-600 rounded-xl font-semibold hover:opacity-90 transition btn-glow text-lg mb-4 flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    Edit This Semester
+                </button>
+                
                 <button onclick="proceedToNextSemester()" class="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-semibold hover:opacity-90 transition btn-glow text-lg" id="nextSemBtn">
                     Next Semester
                 </button>
@@ -408,6 +413,18 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
                         Start Over
                     </button>
+                    
+                    <!-- NEW: Edit and Add Semester Buttons -->
+                    <div class="flex gap-3">
+                        <button onclick="editLastSemester()" class="px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 rounded-xl font-semibold hover:opacity-90 transition flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            Edit Last Semester
+                        </button>
+                        <button onclick="addNextSemester()" id="addNextSemBtn" class="hidden px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl font-semibold hover:opacity-90 transition flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            Add Next Semester
+                        </button>
+                    </div>
                     <div class="relative">
                         <button onclick="toggleExportMenu()" class="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl font-semibold hover:opacity-90 transition flex items-center gap-2" id="exportBtn">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -978,6 +995,13 @@
             });
             
             showScreen('resultsScreen');
+            
+            // NEW: Show "Add Next Semester" button only in CGPA mode
+            if (state.mode === 'cgpa') {
+                document.getElementById('addNextSemBtn').classList.remove('hidden');
+            } else {
+                document.getElementById('addNextSemBtn').classList.add('hidden');
+            }
         }
 
         // Toggle export menu
@@ -1625,6 +1649,153 @@
                 moonIcon.classList.add('hidden');
                 sunIcon.classList.remove('hidden');
             }
+        }
+
+        
+
+        // Edit current semester from summary screen
+        function editCurrentSemester() {
+            if (state.semesters.length === 0) {
+                showToast('No semester data to edit', 'error');
+                return;
+            }
+            
+            // Get the last semester (current one being reviewed)
+            const currentSemester = state.semesters[state.semesters.length - 1];
+            
+            // Remove it from array (we'll recalculate)
+            state.semesters.pop();
+            
+            // Set subject count
+            document.getElementById('totalSubjects').value = currentSemester.subjects.length;
+            
+            saveState();
+            
+            // Pre-fill the subject entry form
+            const numSubjects = currentSemester.subjects.length;
+            state.currentSubjects = [];
+            
+            const container = document.getElementById('subjectsContainer');
+            container.innerHTML = '';
+            
+            document.getElementById('inputMethodLabel').textContent = 
+                state.inputMethod === 'marks' ? 'Enter marks (0-100) for each subject' : 'Enter GPA (0.00-4.00) for each subject';
+            
+            document.getElementById('calcButtonText').textContent = state.mode === 'cgpa' ? 'Results' : 'GPA';
+
+            for (let i = 0; i < numSubjects; i++) {
+                const subject = currentSemester.subjects[i];
+                const subjectCard = document.createElement('div');
+                subjectCard.className = 'glass rounded-xl p-5 fade-in';
+                subjectCard.style.animationDelay = `${i * 0.05}s`;
+                
+                subjectCard.innerHTML = `
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-sm">${i + 1}</div>
+                        <input type="text" placeholder="Subject Name" value="${subject.name}" class="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500 transition" id="subjectName${i}">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-gray-400 text-sm mb-1 block">Credit Hours</label>
+                            <input type="number" min="1" max="6" value="${subject.credits}" class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500 transition text-center" id="credits${i}">
+                        </div>
+                        <div>
+                            <label class="text-gray-400 text-sm mb-1 block">${state.inputMethod === 'marks' ? 'Marks (0-100)' : 'GPA (0-4)'}</label>
+                            <input type="number" min="0" max="${state.inputMethod === 'marks' ? '100' : '4'}" step="${state.inputMethod === 'marks' ? '1' : '0.01'}" value="${state.inputMethod === 'marks' && subject.marks !== null ? subject.marks : subject.gpa}" class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500 transition text-center" id="value${i}">
+                        </div>
+                    </div>
+                `;
+                container.appendChild(subjectCard);
+            }
+            
+            showScreen('subjectEntryScreen');
+            if (state.mode === 'cgpa') updateSemesterIndicator();
+            
+            showToast('Editing semester ' + state.currentSemester, 'info');
+        }
+
+        // Edit last semester from results screen
+        function editLastSemester() {
+            if (state.semesters.length === 0) {
+                showToast('No semesters to edit', 'error');
+                return;
+            }
+            
+            // Get the last semester
+            const lastSemester = state.semesters[state.semesters.length - 1];
+            
+            // Set current semester to the last one
+            state.currentSemester = lastSemester.number;
+            
+            // Remove the last semester from array (we'll recalculate it)
+            state.semesters.pop();
+            
+            // Set subject count
+            document.getElementById('totalSubjects').value = lastSemester.subjects.length;
+            
+            saveState();
+            
+            // Go to subject entry and pre-fill data
+            const numSubjects = lastSemester.subjects.length;
+            state.currentSubjects = [];
+            
+            const container = document.getElementById('subjectsContainer');
+            container.innerHTML = '';
+            
+            document.getElementById('inputMethodLabel').textContent = 
+                state.inputMethod === 'marks' ? 'Enter marks (0-100) for each subject' : 'Enter GPA (0.00-4.00) for each subject';
+            
+            document.getElementById('calcButtonText').textContent = state.mode === 'cgpa' ? 'Results' : 'GPA';
+
+            for (let i = 0; i < numSubjects; i++) {
+                const subject = lastSemester.subjects[i];
+                const subjectCard = document.createElement('div');
+                subjectCard.className = 'glass rounded-xl p-5 fade-in';
+                subjectCard.style.animationDelay = `${i * 0.05}s`;
+                
+                subjectCard.innerHTML = `
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-sm">${i + 1}</div>
+                        <input type="text" placeholder="Subject Name" value="${subject.name}" class="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500 transition" id="subjectName${i}">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-gray-400 text-sm mb-1 block">Credit Hours</label>
+                            <input type="number" min="1" max="6" value="${subject.credits}" class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500 transition text-center" id="credits${i}">
+                        </div>
+                        <div>
+                            <label class="text-gray-400 text-sm mb-1 block">${state.inputMethod === 'marks' ? 'Marks (0-100)' : 'GPA (0-4)'}</label>
+                            <input type="number" min="0" max="${state.inputMethod === 'marks' ? '100' : '4'}" step="${state.inputMethod === 'marks' ? '1' : '0.01'}" value="${state.inputMethod === 'marks' && subject.marks !== null ? subject.marks : subject.gpa}" class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500 transition text-center" id="value${i}">
+                        </div>
+                    </div>
+                `;
+                container.appendChild(subjectCard);
+            }
+            
+            showScreen('subjectEntryScreen');
+            if (state.mode === 'cgpa') updateSemesterIndicator();
+            
+            showToast('Editing last semester', 'info');
+        }
+
+        // Add next semester (CGPA mode only)
+        function addNextSemester() {
+            if (state.mode !== 'cgpa') {
+                showToast('This feature is only for CGPA mode', 'error');
+                return;
+            }
+            
+            // Increment semester count and current semester
+            state.totalSemesters++;
+            state.currentSemester = state.totalSemesters;
+            
+            saveState();
+            
+            // Go to subject count screen
+            showScreen('subjectCountScreen');
+            updateSemesterIndicator();
+            
+            showToast(`Adding Semester ${state.currentSemester}`, 'info');
         }
 
         // Initialize
